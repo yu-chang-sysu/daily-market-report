@@ -1,0 +1,21 @@
+# 配置文件（含个人邮箱、SMTP 授权码、自选名单）——绝不提交
+config.yaml
+
+# 运行时产物：生成的 PDF、日志、状态记录
+output/
+
+# 本地依赖目录（请用 pip install -r requirements.txt 安装）
+deps/
+deps2/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 环境与系统
+.env
+.DS_Store
+
+# 调试图片
+*.png

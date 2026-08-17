@@ -1,0 +1,4 @@
+akshare>=1.18.0
+pyyaml>=6.0
+reportlab>=4.0
+pandas>=2.0

@@ -1,0 +1,48 @@
+# =====================================================
+# 每日市场观察 - 配置模板
+#
+# 使用步骤：
+#   1. 把本文件复制为 config.yaml（config.yaml 不会提交到 git，也不会公开）
+#       Windows:  copy config.example.yaml config.yaml
+#       Linux:    cp config.example.yaml config.yaml
+#   2. 按下面说明填写邮箱、关注板块和股票
+#   3. 运行 python main.py 测试
+# =====================================================
+
+watchlist:
+  # 关注的板块（同花顺板块名称：行业/概念均可）
+  # 示例：
+  #   - "半导体"
+  #   - "存储芯片"
+  #   - "人工智能"
+  sectors: []
+
+  # 关注的股票（代码 + 名称），示例：
+  #   - { code: "600519", name: "贵州茅台" }
+  #   - { code: "000001", name: "平安银行" }
+  stocks: []
+
+report:
+  title: "每日市场观察"
+  morning_title: "今日股市推荐执行报告"
+  news_days: 3            # 新闻回溯天数
+  max_news_per_stock: 3   # 每只股票最多列出的新闻条数
+  market_news_count: 10   # 财联社市场要闻条数
+  hist_days: 30           # 个股历史行情回溯天数
+  output_dir: "output"    # PDF 输出目录
+
+email:
+  enabled: true
+  smtp_host: "smtp.qq.com"        # QQ 邮箱；163 邮箱填 smtp.163.com
+  smtp_port: 465                  # 465 = SSL；587 = STARTTLS（同时把 use_ssl 改为 false）
+  use_ssl: true
+  username: ""                    # 你的发件邮箱，如 xxx@qq.com
+  password: ""                    # SMTP 授权码（邮箱设置里生成，不是登录密码）
+  from_addr: ""                   # 发件邮箱（通常与 username 相同）
+  to_addr: ""                     # 收件邮箱（手机邮箱）
+  subject_prefix: "[每日市场观察]"
+  morning_subject_prefix: "[每日市场观察] 今日股市推荐执行报告"
+
+schedule:
+  run_time: "16:30"       # 收盘报告时间
+  morning_time: "09:00"   # 次日盘前执行报告时间
