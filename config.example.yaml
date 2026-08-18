@@ -23,7 +23,7 @@ watchlist:
   stocks: []
 
 report:
-  title: "每日市场观察"
+  title: "每日股市观察报告"
   morning_title: "今日股市推荐执行报告"
   news_days: 3            # 新闻回溯天数
   max_news_per_stock: 3   # 每只股票最多列出的新闻条数
