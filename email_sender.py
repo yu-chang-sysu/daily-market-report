@@ -65,7 +65,7 @@ def build_morning_body(commentary, date_str):
 
 
 def send_email(cfg, pdf_path, commentary, date_str, subject_prefix=None,
-               body_builder=build_body):
+               body_builder=build_body, data_date=None):
     mail = cfg.get("email", {})
     if not mail.get("enabled", True):
         log.info("邮箱推送未启用，跳过。")
@@ -84,8 +84,14 @@ def send_email(cfg, pdf_path, commentary, date_str, subject_prefix=None,
     msg["To"] = mail["to_addr"]
     prefix = subject_prefix or mail.get("subject_prefix", "[每日市场观察]")
     subject = f"{prefix} {date_str}"
+    if data_date and data_date != date_str:
+        subject += f"（数据截至 {data_date}）"
     msg["Subject"] = Header(subject, "utf-8")
-    msg.attach(MIMEText(body_builder(commentary, date_str), "plain", "utf-8"))
+    body_text = body_builder(commentary, date_str)
+    if data_date and data_date != date_str:
+        body_text = (f"注意：本报告数据截至 {data_date}，"
+                     f"非交易日 {date_str}。\n\n{body_text}")
+    msg.attach(MIMEText(body_text, "plain", "utf-8"))
 
     with open(pdf_path, "rb") as f:
         part = MIMEApplication(f.read(), _subtype="pdf")

@@ -44,5 +44,5 @@ email:
   morning_subject_prefix: "[每日市场观察] 今日股市推荐执行报告"
 
 schedule:
-  run_time: "16:30"       # 收盘报告时间
+  run_time: "18:00"       # 收盘报告时间（避开日K未刷新窗口）
   morning_time: "09:00"   # 次日盘前执行报告时间

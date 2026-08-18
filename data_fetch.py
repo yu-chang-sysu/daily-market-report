@@ -200,6 +200,35 @@ def _quote_from_hist(hist):
             "net_inflow": 0.0}
 
 
+def _check_hist_date(hist, expected_date, label):
+    """校验日K最后一根K线日期是否等于预期报告日期，返回告警文本或 None。"""
+    if not hist:
+        return f"{label} 无日K数据"
+    last_date = str(hist[-1]["date"])[:10]
+    if last_date != expected_date:
+        return f"{label} 日K数据截至 {last_date}，非报告日期 {expected_date}"
+    return None
+
+
+def _fetch_hist_fresh(fetch_fn, expected_date, label, retries=3, delay=60):
+    """拉取日K并校验日期新鲜度；未刷新时在 18:30 前重试。返回 (rows, warning)。"""
+    rows = fetch_fn()
+    warning = _check_hist_date(rows, expected_date, label)
+    if warning:
+        now = dt.datetime.now()
+        if now.hour * 60 + now.minute < 18 * 60 + 30:
+            for _ in range(retries):
+                time.sleep(delay)
+                try:
+                    rows = fetch_fn()
+                except Exception:  # noqa: BLE001
+                    continue
+                warning = _check_hist_date(rows, expected_date, label)
+                if not warning:
+                    break
+    return rows, warning
+
+
 def fetch_stock_hist(code, days=30):
     """个股日线（新浪），返回最近 days 行。"""
     end = dt.date.today()
@@ -322,7 +351,7 @@ def fetch_all(cfg):
     """汇总抓取所有数据，单项失败不影响整体。"""
     wl = cfg["watchlist"]
     rpt = cfg["report"]
-    data = {"date": dt.date.today().strftime("%Y-%m-%d"), "errors": []}
+    data = {"date": dt.date.today().strftime("%Y-%m-%d"), "errors": [], "data_date": None}
 
     try:
         data["indices"] = fetch_indices()
@@ -342,7 +371,11 @@ def fetch_all(cfg):
     for name in wl.get("sectors", []):
         item = {"name": name, "summary": None, "hist": []}
         try:
-            item["hist"] = fetch_sector_hist(name, days=6)
+            item["hist"], warn = _fetch_hist_fresh(
+                lambda: fetch_sector_hist(name, days=6),
+                data["date"], f"板块 {name}")
+            if warn:
+                data["errors"].append(warn)
         except Exception as e:  # noqa: BLE001
             data["errors"].append(f"板块历史 {name}: {e}")
         item["summary"] = next(
@@ -365,7 +398,11 @@ def fetch_all(cfg):
         name = s.get("name", code)
         item = {"code": code, "name": name, "hist": [], "news": [], "fund": None}
         try:
-            item["hist"] = fetch_stock_hist(code, days=rpt.get("hist_days", 30))
+            item["hist"], warn = _fetch_hist_fresh(
+                lambda: fetch_stock_hist(code, days=rpt.get("hist_days", 30)),
+                data["date"], f"个股 {name}")
+            if warn:
+                data["errors"].append(warn)
         except Exception as e:  # noqa: BLE001
             data["errors"].append(f"个股行情 {name}: {e}")
         try:
@@ -384,4 +421,9 @@ def fetch_all(cfg):
         data["market_news"] = []
         data["errors"].append(f"财联社要闻: {e}")
 
+    all_last = []
+    for item in data.get("stocks", []) + data.get("sectors", []):
+        if item.get("hist"):
+            all_last.append(str(item["hist"][-1]["date"])[:10])
+    data["data_date"] = min(all_last) if all_last else data["date"]
     return data

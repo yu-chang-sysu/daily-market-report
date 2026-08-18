@@ -181,8 +181,14 @@ def build_pdf(data, commentary, cfg, out_path):
     # ===== 封面区 =====
     story.append(Paragraph(cfg["report"].get("title", "每日市场观察"), S_TITLE))
     story.append(Paragraph(
-        f"交易日：{data['date']}  ·  生成时间：{data.get('generated_at', '')}", S_SUB))
+        f"交易日：{data['date']}  ·  数据截至：{data.get('data_date', data['date'])}"
+        f"  ·  生成时间：{data.get('generated_at', '')}", S_SUB))
     story.append(Spacer(1, 2))
+    if data.get("data_date") and data["data_date"] != data["date"]:
+        story.append(Paragraph(
+            f"<font color='#D03028'>注意：个股/板块数据截至 {data['data_date']}，"
+            f"非交易日 {data['date']}，请以实际数据日期为准。</font>", S_NOTE))
+        story.append(Spacer(1, 2))
     story.append(Paragraph(f"今日市场：{commentary['tone']}", S_TONE))
     story.append(Spacer(1, 2))
 

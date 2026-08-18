@@ -76,6 +76,8 @@ def main():
                         help="evening=收盘报告；morning=盘前推荐执行报告")
     parser.add_argument("--force", action="store_true",
                         help="忽略'今日已生成'记录，强制重新生成")
+    parser.add_argument("--strict", action="store_true",
+                        help="数据日期未刷新时拒绝生成与发送")
     args = parser.parse_args()
 
     cfg_path = Path(args.config)
@@ -104,6 +106,12 @@ def main():
     data["generated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if data.get("errors"):
         log.warning("部分数据异常: %s", "; ".join(data["errors"]))
+    if data.get("data_date") and data["data_date"] != data["date"]:
+        log.warning("数据日期校验未通过：报告日期 %s，实际数据截至 %s",
+                    data["date"], data["data_date"])
+        if args.strict:
+            log.error("--strict 模式拒绝生成/发送（数据截至 %s）", data["data_date"])
+            return
 
     is_morning = args.mode == "morning"
     if is_morning:
@@ -129,17 +137,19 @@ def main():
             sent = send_email(
                 cfg, pdf_path, commentary, data["date"],
                 subject_prefix=cfg["email"].get("morning_subject_prefix"),
-                body_builder=build_morning_body)
+                body_builder=build_morning_body,
+                data_date=data.get("data_date"))
         else:
-            sent = send_email(cfg, pdf_path, commentary, data["date"])
+            sent = send_email(cfg, pdf_path, commentary, data["date"],
+                              data_date=data.get("data_date"))
 
     elapsed = (datetime.now() - t0).total_seconds()
     log.info("完成，耗时 %.1f 秒，邮件发送=%s", elapsed, sent)
-    if sent or args.no_email:
+    if (sent or args.no_email) and (args.force or data.get("data_date") == data["date"]):
         _mark_done(args.mode, data["date"])
         log.info("已记录 %s 报告生成日期：%s", args.mode, data["date"])
     else:
-        log.warning("邮件未发送成功，未标记完成状态，下次运行会重试")
+        log.warning("数据日期不一致且未加 --force，未标记完成状态，下次运行会重试")
 
 
 if __name__ == "__main__":

@@ -165,6 +165,8 @@ def build_commentary(data):
             stock_texts.append(f"【{st['name']}】行情数据未获取。")
             continue
         last = hist[-1]
+        last_date = str(last.get("date"))[:10]
+        when_label = "今日" if last_date == data.get("date") else f"截至 {last_date}"
         chg = last.get("change_pct")
         chg_txt = f"{chg:+.2f}%" if chg is not None else "—"
         if chg is None:
@@ -190,7 +192,7 @@ def build_commentary(data):
         if len(closes) >= 6 and closes[-6]:
             chg5 = (closes[-1] / closes[-6] - 1) * 100
         chg5_txt = f"{chg5:+.2f}%" if chg5 is not None else "—"
-        seg = (f"【{st['name']}（{st['code']}）】今日{cls}，涨跌幅 {chg_txt}，"
+        seg = (f"【{st['name']}（{st['code']}）】{when_label}{cls}，涨跌幅 {chg_txt}，"
                f"近5日 {chg5_txt}，{trend}，{vol_note}。")
         if fund and fund.get("net") not in (None, 0.0):
             seg += f"主力资金净{('流入' if fund['net'] > 0 else '流出')} " \
