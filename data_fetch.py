@@ -347,11 +347,12 @@ def fetch_cls_news(count=10):
     return out
 
 
-def fetch_all(cfg):
+def fetch_all(cfg, mode="evening"):
     """汇总抓取所有数据，单项失败不影响整体。"""
     wl = cfg["watchlist"]
     rpt = cfg["report"]
-    data = {"date": dt.date.today().strftime("%Y-%m-%d"), "errors": [], "data_date": None}
+    data = {"date": dt.date.today().strftime("%Y-%m-%d"), "errors": [],
+            "data_date": None, "mode": mode}
 
     try:
         data["indices"] = fetch_indices()
@@ -371,11 +372,14 @@ def fetch_all(cfg):
     for name in wl.get("sectors", []):
         item = {"name": name, "summary": None, "hist": []}
         try:
-            item["hist"], warn = _fetch_hist_fresh(
-                lambda: fetch_sector_hist(name, days=6),
-                data["date"], f"板块 {name}")
-            if warn:
-                data["errors"].append(warn)
+            if mode == "evening":
+                item["hist"], warn = _fetch_hist_fresh(
+                    lambda: fetch_sector_hist(name, days=6),
+                    data["date"], f"板块 {name}")
+                if warn:
+                    data["errors"].append(warn)
+            else:
+                item["hist"] = fetch_sector_hist(name, days=6)
         except Exception as e:  # noqa: BLE001
             data["errors"].append(f"板块历史 {name}: {e}")
         item["summary"] = next(
@@ -398,11 +402,14 @@ def fetch_all(cfg):
         name = s.get("name", code)
         item = {"code": code, "name": name, "hist": [], "news": [], "fund": None}
         try:
-            item["hist"], warn = _fetch_hist_fresh(
-                lambda: fetch_stock_hist(code, days=rpt.get("hist_days", 30)),
-                data["date"], f"个股 {name}")
-            if warn:
-                data["errors"].append(warn)
+            if mode == "evening":
+                item["hist"], warn = _fetch_hist_fresh(
+                    lambda: fetch_stock_hist(code, days=rpt.get("hist_days", 30)),
+                    data["date"], f"个股 {name}")
+                if warn:
+                    data["errors"].append(warn)
+            else:
+                item["hist"] = fetch_stock_hist(code, days=rpt.get("hist_days", 30))
         except Exception as e:  # noqa: BLE001
             data["errors"].append(f"个股行情 {name}: {e}")
         try:

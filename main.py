@@ -102,11 +102,11 @@ def main():
         return
 
     t0 = datetime.now()
-    data = fetch_all(cfg)
+    data = fetch_all(cfg, args.mode)
     data["generated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if data.get("errors"):
         log.warning("部分数据异常: %s", "; ".join(data["errors"]))
-    if data.get("data_date") and data["data_date"] != data["date"]:
+    if args.mode != "morning" and data.get("data_date") and data["data_date"] != data["date"]:
         log.warning("数据日期校验未通过：报告日期 %s，实际数据截至 %s",
                     data["date"], data["data_date"])
         if args.strict:
@@ -137,15 +137,15 @@ def main():
             sent = send_email(
                 cfg, pdf_path, commentary, data["date"],
                 subject_prefix=cfg["email"].get("morning_subject_prefix"),
-                body_builder=build_morning_body,
-                data_date=data.get("data_date"))
+                body_builder=build_morning_body)
         else:
             sent = send_email(cfg, pdf_path, commentary, data["date"],
                               data_date=data.get("data_date"))
 
     elapsed = (datetime.now() - t0).total_seconds()
     log.info("完成，耗时 %.1f 秒，邮件发送=%s", elapsed, sent)
-    if (sent or args.no_email) and (args.force or data.get("data_date") == data["date"]):
+    if (sent or args.no_email) and (args.force or args.mode == "morning"
+                                    or data.get("data_date") == data["date"]):
         _mark_done(args.mode, data["date"])
         log.info("已记录 %s 报告生成日期：%s", args.mode, data["date"])
     else:
